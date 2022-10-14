@@ -412,7 +412,7 @@ class QueueJob(models.Model):
                 ['|',
                  ('date_done', '<=', deadline),
                  ('date_cancelled', '<=', deadline),
-                 ('channel', '=', channel.complete_name)],
+                 ('channel', '=', channel.complete_name)], limit=500,
             )
             if jobs:
                 jobs.unlink()
