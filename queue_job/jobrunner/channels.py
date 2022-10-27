@@ -942,7 +942,7 @@ class ChannelManager(object):
         _logger.info("Configured channel: %s", channel)
         return channel
 
-    def get_channel_by_name(self, channel_name, autocreate=False):
+    def get_channel_by_name(self, channel_name, autocreate=True):
         """Return a Channel object by its name.
 
         If it does not exist and autocreate is True, it is created

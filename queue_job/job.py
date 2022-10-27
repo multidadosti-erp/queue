@@ -974,11 +974,13 @@ def job(func=None, default_channel='root', retry_pattern=None):
     if retry_pattern:
         xml_fields.append('    <field name="retry_pattern">{retry_pattern}</field>')
 
-    _logger.info(
-        "@job is deprecated and no longer needed (on %s), it is advised to use an "
-        "XML record (activate DEBUG log for snippet)",
-        func.__name__,
-    )
+    # Multidados: Não mostrar msg de aviso de deprecated
+    # _logger.info(
+    #     "@job is deprecated and no longer needed (on %s), it is advised to use an "
+    #     "XML record (activate DEBUG log for snippet)",
+    #     func.__name__,
+    # )
+
     if _logger.isEnabledFor(logging.DEBUG):
         xml_record = (
             '<record id="job_function_[insert model]_{method}"'
