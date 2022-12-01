@@ -1094,11 +1094,12 @@ def related_action(action=None, **kwargs):
             '    <field name="related_action">{related_action}</field>'
         )
 
-        _logger.info(
-            "@related_action is deprecated and no longer needed (on %s),"
-            " it is advised to use an XML record (activate DEBUG log for snippet)",
-            func.__name__,
-        )
+        # Desativar log desnecessário
+        # _logger.info(
+        #     "@related_action is deprecated and no longer needed (on %s),"
+        #     " it is advised to use an XML record (activate DEBUG log for snippet)",
+        #     func.__name__,
+        # )
         if _logger.isEnabledFor(logging.DEBUG):
             xml_record = (
                 '<record id="job_function_[insert model]_{method}"'
