@@ -38,12 +38,12 @@ msgstr ""
 #. module: queue_job_subscribe
 #: model:ir.model.fields,field_description:queue_job_subscribe.field_res_users__subscribe_job
 msgid "Job Notifications"
-msgstr "Notificações de trabalho"
+msgstr "Notificações de Fila de Trabalho"
 
 #. module: queue_job_subscribe
 #: model:ir.model,name:queue_job_subscribe.model_queue_job
 msgid "Queue Job"
-msgstr "Fila de tarefas"
+msgstr "Fila de Tarefas"
 
 #. module: queue_job_subscribe
 #: model:ir.model,name:queue_job_subscribe.model_res_users
