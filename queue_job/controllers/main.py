@@ -105,12 +105,19 @@ class RunJobController(http.Controller):
             "FOR UPDATE",
             (job_uuid, ENQUEUED)
         )
+
         if not env.cr.fetchone():
-            _logger.warn(
-                "was requested to run job %s, but it does not exist, "
-                "or is not in state %s",
-                job_uuid, ENQUEUED
-            )
+            # Não precisa Logar o que não foi encontrado,
+            # pois já foi processado
+            # _logger.warn(
+            #     "was requested to run job %s, but it does not exist, "
+            #     "or is not in state %s",
+            #     job_uuid, ENQUEUED
+            # )
+
+            # Multidados: Commit para forçar uma atualização no banco de dados
+            env.cr.commit()
+
             return ""
 
         job = Job.load(env, job_uuid)

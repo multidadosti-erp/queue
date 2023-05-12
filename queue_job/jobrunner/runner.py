@@ -255,6 +255,7 @@ def _async_http_get(scheme, host, port, user, password, db_name, job_uuid):
             _logger.exception("exception in GET %s", url)
             session.cookies.clear()
             set_job_pending()
+
     thread = threading.Thread(target=urlopen)
     thread.daemon = True
     thread.start()
