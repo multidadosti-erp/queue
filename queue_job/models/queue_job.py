@@ -99,17 +99,17 @@ class QueueJob(models.Model):
     state = fields.Selection(STATES,
                              readonly=True,
                              required=True,
-                             index=True)
+                             index=False)
     priority = fields.Integer()
     exc_name = fields.Char(string="Exception", readonly=True)
     exc_message = fields.Char(string="Exception Message", readonly=True)
     exc_info = fields.Text(string='Exception Info', readonly=True)
     result = fields.Text(readonly=True)
 
-    date_created = fields.Datetime(string='Created Date', readonly=True)
-    date_started = fields.Datetime(string='Start Date', readonly=True)
-    date_enqueued = fields.Datetime(string='Enqueue Time', readonly=True)
-    date_done = fields.Datetime(readonly=True)
+    date_created = fields.Datetime(string='Created Date', readonly=True, index=True)
+    date_started = fields.Datetime(string='Start Date', readonly=True, index=True)
+    date_enqueued = fields.Datetime(string='Enqueue Time', readonly=True, index=True)
+    date_done = fields.Datetime(readonly=True, index=True)
     exec_time = fields.Float(
         string="Execution Time (avg)",
         group_operator="avg",
