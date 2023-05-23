@@ -99,10 +99,11 @@ class RunJobController(http.Controller):
                     new_cr.commit()
 
         # ensure the job to run is in the correct state and lock the record
+        # Multidados: Adiciona SKIP LOCKED para eviar erros no Odoo
         env.cr.execute(
             "SELECT state FROM queue_job "
             "WHERE uuid=%s AND state=%s "
-            "FOR UPDATE",
+            "FOR UPDATE SKIP LOCKED",
             (job_uuid, ENQUEUED)
         )
 
