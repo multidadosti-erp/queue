@@ -115,10 +115,6 @@ class RunJobController(http.Controller):
             #     "or is not in state %s",
             #     job_uuid, ENQUEUED
             # )
-
-            # Multidados: Commit para forçar uma atualização no banco de dados
-            env.cr.commit()
-
             return ""
 
         job = Job.load(env, job_uuid)
