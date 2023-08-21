@@ -419,7 +419,7 @@ class QueueJob(models.Model):
         return True
 
     @api.model
-    def requeue_stuck_jobs(self, enqueued_delta=5, started_delta=30):
+    def requeue_stuck_jobs(self, enqueued_delta=5, started_delta=0):
         """Fix jobs that are in a bad states
         :param in_queue_delta: lookup time in minutes for jobs
                                 that are in enqueued state
