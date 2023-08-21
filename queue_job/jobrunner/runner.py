@@ -251,8 +251,6 @@ def _async_http_get(scheme, host, port, user, password, db_name, job_uuid):
             response.raise_for_status()
         except requests.Timeout:
             set_job_pending()
-        except RuntimeError as excp:
-            _logger.exception('Exception in GET %s', excp)
         except Exception:
             _logger.exception("exception in GET %s", url)
             session.cookies.clear()
@@ -261,18 +259,16 @@ def _async_http_get(scheme, host, port, user, password, db_name, job_uuid):
     thread_max_count = os.environ.get('ODOO_QUEUE_JOB_THREAD_MAX_COUNT') or queue_job_config.get("thread_max_count") or 0  # noqa
     thread_max_count = int(thread_max_count)
 
-    thread = threading.Thread(target=urlopen)
-    thread.daemon = True
-
     active_count = threading.active_count()
 
     _logger.info('Thread count: %s', active_count)
 
-    while thread_max_count != 0 and active_count > thread_max_count:
-        time.sleep(1)
-        _logger.info('Waiting Thread...')
-
-    thread.start()
+    if thread_max_count != 0 and active_count > thread_max_count:
+        time.sleep(3)
+    else:
+        thread = threading.Thread(target=urlopen)
+        thread.daemon = True
+        thread.start()
 
 
 class Database(object):
