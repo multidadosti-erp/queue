@@ -226,7 +226,7 @@ def _async_http_get(scheme, host, port, user, password, db_name, job_uuid):
                 "RETURNING uuid", (PENDING, job_uuid, ENQUEUED)
             )
             if cr.fetchone():
-                _logger.warning(
+                _logger.info(
                     "state of job %s was reset from %s to %s",
                     job_uuid, ENQUEUED, PENDING,
                 )
