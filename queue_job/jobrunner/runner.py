@@ -231,6 +231,27 @@ def _async_http_get(scheme, host, port, user, password, db_name, job_uuid):
                     job_uuid, ENQUEUED, PENDING,
                 )
 
+    def set_start_thread():
+        """ Multidados
+            Método para verificar se o job esta disponivel para executar
+
+        Returns:
+            Boolean: True ou False de acordo com a disponibilidade
+        """
+        connection_info = _connection_info_for(db_name)
+        conn = psycopg2.connect(**connection_info)
+        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        with closing(conn.cursor()) as cr:
+            cr.execute(
+                "SELECT state FROM queue_job "
+                "WHERE uuid=%s AND state=%s",
+                (job_uuid, ENQUEUED)
+            )
+            if cr.fetchone():
+                return True
+
+        return False
+
     # TODO: better way to HTTP GET asynchronously (grequest, ...)?
     #       if this was python3 I would be doing this with
     #       asyncio, aiohttp and aiopg
@@ -256,19 +277,21 @@ def _async_http_get(scheme, host, port, user, password, db_name, job_uuid):
             session.cookies.clear()
             set_job_pending()
 
-    thread_max_count = os.environ.get('ODOO_QUEUE_JOB_THREAD_MAX_COUNT') or queue_job_config.get("thread_max_count") or 0  # noqa
-    thread_max_count = int(thread_max_count)
+    # Verifica se executa a thread
+    if set_start_thread():
+        thread_max_count = os.environ.get('ODOO_QUEUE_JOB_THREAD_MAX_COUNT') or queue_job_config.get("thread_max_count") or 0  # noqa
+        thread_max_count = int(thread_max_count)
 
-    active_count = threading.active_count()
+        active_count = threading.active_count()
 
-    _logger.info('Thread count: %s', active_count)
+        _logger.info('Thread count: %s', active_count)
 
-    if thread_max_count != 0 and active_count > thread_max_count:
-        time.sleep(3)
-    else:
-        thread = threading.Thread(target=urlopen)
-        thread.daemon = True
-        thread.start()
+        if thread_max_count != 0 and active_count > thread_max_count:
+            time.sleep(3)
+        else:
+            thread = threading.Thread(target=urlopen)
+            thread.daemon = True
+            thread.start()
 
 
 class Database(object):
