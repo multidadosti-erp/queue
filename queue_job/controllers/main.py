@@ -108,7 +108,7 @@ class RunJobController(http.Controller):
         )
 
         if not env.cr.fetchone():
-            _logger.warn(
+            _logger.info(
                 "was requested to run job %s, but it does not exist, "
                 "or is not in state %s",
                 job_uuid, ENQUEUED
