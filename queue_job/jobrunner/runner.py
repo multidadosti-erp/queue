@@ -244,13 +244,10 @@ def _async_http_get(scheme, host, port, user, password, db_name, job_uuid):
         with closing(conn.cursor()) as cr:
             cr.execute(
                 "SELECT state FROM queue_job "
-                "WHERE uuid=%s AND state=%s "
-                "FOR UPDATE SKIP LOCKED",
+                "WHERE uuid=%s AND state=%s",
                 (job_uuid, ENQUEUED)
             )
             if cr.fetchone():
-                # liberando Update
-                cr.connection.rollback()
                 return True
 
         return False
