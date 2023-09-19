@@ -504,8 +504,8 @@ class Channel(object):
             self._failed.remove(job)
             if self.parent:
                 self.parent.set_running(job)
-            _logger.debug("job %s marked running in channel %s",
-                          job.uuid, self)
+            # Log
+            _logger.info("set_running: job %s marked running %s in channel %s", job.db_name, job.uuid, self) # noqa
 
     def set_failed(self, job):
         """Mark the job as failed. """
@@ -566,8 +566,8 @@ class Channel(object):
             if not job:
                 return
             self._running.add(job)
-            _logger.debug("job %s marked running in channel %s",
-                          job.uuid, self)
+            # Log
+            _logger.info("has_capacity: job %s marked running %s in channel %s", job.db_name, job.uuid, self) # noqa
             yield job
             if self.throttle:
                 self._pause_until = now + self.throttle
