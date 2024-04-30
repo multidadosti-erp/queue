@@ -11,7 +11,7 @@ class TestQueueJobCron(TransactionCase):
     def test_queue_job_cron(self):
         QueueJob = self.env['queue.job']
         default_channel = self.env.ref('queue_job_cron.channel_root_ir_cron')
-        cron = self.env.ref('queue_job.ir_cron_autovacuum_queue_jobs')
+        cron = self.env.ref('queue_job.ir_cron_autovacuum_queue_jobs').copy()
         self.assertFalse(cron.run_as_queue_job)
 
         cron.method_direct_trigger()
@@ -31,7 +31,7 @@ class TestQueueJobCron(TransactionCase):
         self.assertEqual(qjob.channel, cron.channel_id.complete_name)
 
     def test_queue_job_cron_onchange(self):
-        cron = self.env.ref('queue_job.ir_cron_autovacuum_queue_jobs')
+        cron = self.env.ref('queue_job.ir_cron_autovacuum_queue_jobs').copy()
         default_channel = self.env.ref('queue_job_cron.channel_root_ir_cron')
         self.assertFalse(cron.run_as_queue_job)
         cron.write({'run_as_queue_job': True})
@@ -39,6 +39,6 @@ class TestQueueJobCron(TransactionCase):
         self.assertEqual(cron.channel_id.id, default_channel.id)
 
     def test_queue_job_cron_run(self):
-        cron = self.env.ref('queue_job.ir_cron_autovacuum_queue_jobs')
+        cron = self.env.ref('queue_job.ir_cron_autovacuum_queue_jobs').copy()
         IrCron = self.env['ir.cron']
         IrCron._run_job_as_queue_job(server_action=cron.ir_actions_server_id)
