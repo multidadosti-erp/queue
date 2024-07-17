@@ -255,7 +255,7 @@ class JobsTrap():
 
     def _filtered_enqueued_jobs(self, job_method):
         enqueued_jobs = [
-            job for job in self.enqueued_jobs if job.func == job_method
+            job for job in self.enqueued_jobs if job.func.__self__ == job_method.__self__ and job.func.__func__ == job_method.__func__
         ]
         return enqueued_jobs
 
