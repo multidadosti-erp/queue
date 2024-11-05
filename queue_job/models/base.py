@@ -34,7 +34,7 @@ class Base(models.AbstractModel):
             self.env['queue.job.function']._register_job(self, job_method)
 
     @api.multi
-    def with_delay(self, priority=None, eta=None,
+    def with_delay(self, priority=None, eta=15,
                    max_retries=None, description=None,
                    channel=None, identity_key=None):
         """Return a ``DelayableRecordset``
@@ -60,6 +60,10 @@ class Base(models.AbstractModel):
 
         :return: instance of a DelayableRecordset
         :rtype: :class:`odoo.addons.queue_job.job.DelayableRecordset`
+
+        # Multidados/Augusto
+        eta = 15 Segundos default para início, assim podendo intercalar 
+              grandes filas com outras filas de outros bancos de dados.
         """
         return DelayableRecordset(self, priority=priority,
                                   eta=eta,
