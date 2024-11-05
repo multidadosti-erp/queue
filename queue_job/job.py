@@ -431,6 +431,10 @@ class Job(object):
         self.date_created = datetime.now()
         self._description = description
 
+        # Adiciona N Segundos a data de Criação
+        if isinstance(eta, int):
+            eta = self.date_created + timedelta(seconds=eta)
+
         if isinstance(identity_key, str):
             self._identity_key = identity_key
             self._identity_key_func = None
