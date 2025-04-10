@@ -408,6 +408,7 @@ class QueueJob(models.Model):
         for channel in self.env['queue.job.channel'].search([]):
             deadline = datetime.now() - timedelta(
                 days=int(channel.removal_interval))
+
             jobs = self.search(
                 ['|',
                  ('date_done', '<=', deadline),
@@ -419,7 +420,7 @@ class QueueJob(models.Model):
         return True
 
     @api.model
-    def requeue_stuck_jobs(self, enqueued_delta=5, started_delta=60):
+    def requeue_stuck_jobs(self, enqueued_delta=20, started_delta=60):
         """Fix jobs that are in a bad states
         :param in_queue_delta: lookup time in minutes for jobs
                                 that are in enqueued state
@@ -438,6 +439,7 @@ class QueueJob(models.Model):
     def _get_stuck_jobs_domain(self, queue_dl, started_dl):
         domain = []
         now = fields.datetime.now()
+
         if queue_dl:
             queue_dl = now - timedelta(minutes=queue_dl)
             domain.append([
@@ -445,6 +447,7 @@ class QueueJob(models.Model):
                 ('date_enqueued', '<=', fields.Datetime.to_string(queue_dl)),
                 ('state', '=', 'enqueued'),
             ])
+
         if started_dl:
             started_dl = now - timedelta(minutes=started_dl)
             domain.append([
@@ -452,20 +455,24 @@ class QueueJob(models.Model):
                 ('date_started', '<=', fields.Datetime.to_string(started_dl)),
                 ('state', '=', 'started'),
             ])
+
         if not domain:
             raise exceptions.ValidationError(
                 _("If both parameters are 0, ALL jobs will be requeued!")
             )
+
         return expression.OR(domain)
+
 
     @api.model
     def _get_stuck_jobs_to_requeue(self, enqueued_delta, started_delta):
-        job_model = self.env['queue.job']
-        stuck_jobs = job_model.search(self._get_stuck_jobs_domain(
+
+        domain = self._get_stuck_jobs_domain(
             enqueued_delta,
             started_delta,
-        ))
-        return stuck_jobs
+        )
+
+        return self.env['queue.job'].search(domain)
 
     @api.multi
     def related_action_open_record(self):
