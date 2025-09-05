@@ -245,10 +245,18 @@ class Job(object):
         if stored.eta:
             eta = stored.eta
 
-        job_ = cls(method, args=args, kwargs=kwargs,
-                   priority=stored.priority, eta=eta, job_uuid=stored.uuid,
-                   description=stored.name, channel=stored.channel,
-                   identity_key=stored.identity_key)
+        job_ = cls(
+            method,
+            args=args,
+            kwargs=kwargs,
+            priority=stored.priority,
+            eta=eta,
+            job_uuid=stored.uuid,
+            description=stored.name,
+            channel=stored.channel,
+            identity_key=stored.identity_key,
+            company_id=stored.company_id.id if stored.company_id else None,
+        )
 
         if stored.date_created:
             job_.date_created = stored.date_created
@@ -351,7 +359,7 @@ class Job(object):
     def __init__(self, func,
                  args=None, kwargs=None, priority=None,
                  eta=None, job_uuid=None, max_retries=None,
-                 description=None, channel=None, identity_key=None):
+                 description=None, channel=None, identity_key=None, company_id=None):
         """ Create a Job
 
         :param func: function to execute
@@ -454,15 +462,24 @@ class Job(object):
         self.exc_message = None
         self.exc_info = None
 
-        if 'company_id' in env.context:
-            company_id = env.context['company_id']
-        else:
-            company_model = env['res.company']
-            company_model = company_model.sudo(self.user_id)
-            company_id = company_model._company_default_get(
-                object='queue.job',
-                field='company_id'
-            ).id
+        if company_id is None:
+            if 'company_id' in env.context:
+                company_id = env.context['company_id']
+            elif 'user' in env.context:
+                user = env.context['user']
+                if 'company_id' in user and user['company_id']:
+                    if isinstance(user, dict):
+                        company_id = user['company_id'][0]
+                    else:
+                        company_id = user.company_id
+            else:
+                company_model = env['res.company']
+                company_model = company_model.sudo(self.user_id)
+                company_id = company_model._company_default_get(
+                    object='queue.job',
+                    field='company_id'
+                ).id
+
         self.company_id = company_id
         self._eta = None
         self.eta = eta
@@ -670,7 +687,7 @@ class Job(object):
 
     @property
     def func(self):
-        recordset = self.recordset.with_context(job_uuid=self.uuid)
+        recordset = self.recordset.with_context(job_uuid=self.uuid, force_company=self.company_id)
         recordset = recordset.sudo(self.user_id)
         return getattr(recordset, self.method_name)
 
