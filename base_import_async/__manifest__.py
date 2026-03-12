@@ -18,11 +18,11 @@
         'queue_job_batch',
     ],
     'data': [
-        # 'views/base_import_async.xml',
+        'views/base_import_async.xml',
     ],
     'qweb': [
-        # 'static/src/xml/import.xml',
+        'static/src/xml/import.xml',
     ],
-    'installable': True, # Excluir em versões futuras
+    'installable': True,
     'development_status': 'Production/Stable',
 }
