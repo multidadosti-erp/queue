@@ -42,3 +42,27 @@ class TestQueueJobCron(TransactionCase):
         cron = self.env.ref('queue_job.ir_cron_autovacuum_queue_jobs').copy()
         IrCron = self.env['ir.cron']
         IrCron._run_job_as_queue_job(server_action=cron.ir_actions_server_id)
+
+    def test_queue_job_cron_no_duplicate_when_active(self):
+        QueueJob = self.env['queue.job']
+        default_channel = self.env.ref('queue_job_cron.channel_root_ir_cron')
+        cron = self.env.ref('queue_job.ir_cron_autovacuum_queue_jobs').copy()
+        cron.write({'run_as_queue_job': True,
+                    'channel_id': default_channel.id})
+
+        cron.method_direct_trigger()
+        first_job = QueueJob.search([
+            ('identity_key', '=', cron._queue_job_identity_key(
+                cron.ir_actions_server_id)),
+        ], limit=1)
+        self.assertTrue(first_job)
+
+        first_job.write({'state': 'started'})
+        cron.method_direct_trigger()
+
+        nb_jobs = QueueJob.search_count([
+            ('identity_key', '=', cron._queue_job_identity_key(
+                cron.ir_actions_server_id)),
+            ('state', 'in', ['pending', 'enqueued', 'started']),
+        ])
+        self.assertEqual(nb_jobs, 1)
