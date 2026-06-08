@@ -137,6 +137,7 @@ from contextlib import closing, contextmanager
 import datetime
 import logging
 import os
+import re
 import select
 import threading
 import time
@@ -172,6 +173,22 @@ def _channels():
         os.environ.get('ODOO_QUEUE_JOB_CHANNELS') or
         queue_job_config.get("channels") or "root:1"
     )
+
+
+def _parse_int(value, default=0):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _sanitize_channel_token(value):
+    token = re.sub(r'[^0-9A-Za-z_]+', '_', value or '').strip('_').lower()
+    if not token:
+        token = 'default'
+    if token[0].isdigit():
+        token = 'db_' + token
+    return token
 
 
 def _datetime_to_epoch(dt):
@@ -393,10 +410,71 @@ class QueueJobRunner(object):
         self.channel_manager = ChannelManager()
         if channel_config_string is None:
             channel_config_string = _channels()
+        self.channel_config_string = channel_config_string
+        self.base_channel_configs = ChannelManager.parse_simple_config(
+            self.channel_config_string
+        )
         self.channel_manager.simple_configure(channel_config_string)
+
+        per_db_capacity = (
+            os.environ.get('ODOO_QUEUE_JOB_PER_DB_CAPACITY') or
+            queue_job_config.get('per_db_capacity') or
+            0
+        )
+        self.per_db_capacity = _parse_int(per_db_capacity, default=0)
+
+        self.per_db_prefix = (
+            os.environ.get('ODOO_QUEUE_JOB_PER_DB_PREFIX') or
+            queue_job_config.get('per_db_prefix') or
+            'db'
+        ).strip() or 'db'
+
         self.db_by_name = {}
         self._stop = False
         self._stop_pipe = os.pipe()
+
+    def _db_root_channel_name(self, db_name):
+        token = _sanitize_channel_token(db_name)
+        return 'root.{}_{}'.format(self.per_db_prefix, token)
+
+    def _effective_channel_name(self, db_name, channel_name):
+        if self.per_db_capacity <= 0:
+            return channel_name
+
+        full_name = channel_name or 'root'
+        if not full_name.startswith('root'):
+            full_name = 'root.' + full_name
+
+        suffix = '' if full_name == 'root' else full_name[len('root'):]
+        return self._db_root_channel_name(db_name) + suffix
+
+    def _configure_db_channels(self, db_name):
+        if self.per_db_capacity <= 0:
+            return
+
+        db_root = self._db_root_channel_name(db_name)
+        self.channel_manager.get_channel_from_config({
+            'name': db_root,
+            'capacity': self.per_db_capacity,
+        })
+
+        # Replicate configured subchannels under each DB root to preserve
+        # capacity/throttle/sequential behavior per tenant.
+        for base_config in self.base_channel_configs:
+            base_name = base_config.get('name')
+            if not base_name or base_name == 'root':
+                continue
+
+            full_base_name = base_name
+            if not full_base_name.startswith('root'):
+                full_base_name = 'root.' + full_base_name
+
+            if not full_base_name.startswith('root.'):
+                continue
+
+            replicated = dict(base_config)
+            replicated['name'] = db_root + full_base_name[len('root'):]
+            self.channel_manager.get_channel_from_config(replicated)
 
     @classmethod
     def from_environ_or_config(cls):
@@ -452,10 +530,13 @@ class QueueJobRunner(object):
             if not db.has_queue_job:
                 _logger.debug('queue_job is not installed for db %s', db_name)
             else:
+                self._configure_db_channels(db_name)
                 self.db_by_name[db_name] = db
                 with db.select_jobs('state in %s', (NOT_DONE,)) as cr:
                     for job_data in cr:
                         job_data = self.get_job_data_to_notify(job_data)
+                        job_data = list(job_data)
+                        job_data[0] = self._effective_channel_name(db_name, job_data[0])
                         self.channel_manager.notify(db_name, *job_data)
                 _logger.info('queue job runner ready for db %s', db_name)
 
@@ -491,6 +572,11 @@ class QueueJobRunner(object):
                 with db.select_jobs('uuid = %s', (uuid,)) as cr:
                     job_datas = cr.fetchone()
                     if job_datas:
+                        job_datas = list(job_datas)
+                        job_datas[0] = self._effective_channel_name(
+                            db.db_name,
+                            job_datas[0],
+                        )
                         self.channel_manager.notify(db.db_name, *job_datas)
                     else:
                         self.channel_manager.remove_job(uuid)
